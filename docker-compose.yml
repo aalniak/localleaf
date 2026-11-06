@@ -1,0 +1,24 @@
+# Run Localleaf with one command:  docker compose up -d   →  http://localhost:4000
+# The first build pulls the TeX Live image (~5 GB, once).
+services:
+  localleaf:
+    build: .
+    image: localleaf:latest
+    container_name: localleaf
+    restart: unless-stopped
+    ports:
+      # Published on localhost only. To serve other machines, change to "4000:4000"
+      # AND set LOCALLEAF_PASSWORD + LOCALLEAF_ALLOWED_HOSTS below (ideally behind HTTPS).
+      - "127.0.0.1:4000:4000"
+    environment:
+      LOCALLEAF_PASSWORD: ${LOCALLEAF_PASSWORD:-}
+      LOCALLEAF_ALLOWED_HOSTS: ${LOCALLEAF_ALLOWED_HOSTS:-}
+      LOCALLEAF_TRUST_PROXY: ${LOCALLEAF_TRUST_PROXY:-}
+      LOCALLEAF_COMPILE_TIMEOUT: ${LOCALLEAF_COMPILE_TIMEOUT:-300}
+    volumes:
+      # A named volume. To use a host folder instead (e.g. ./data:/data), make it
+      # writable by uid 10001 first: sudo chown -R 10001:10001 ./data
+      - localleaf-data:/data
+
+volumes:
+  localleaf-data:

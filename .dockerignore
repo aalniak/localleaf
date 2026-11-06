@@ -1,0 +1,10 @@
+node_modules
+web/dist
+data
+coverage
+.git
+*.log
+Dockerfile
+docker-compose.yml
+.dockerignore
+.github

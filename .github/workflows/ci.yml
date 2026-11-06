@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Free disk space for the TeX Live image
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+      - name: Build image
+        run: docker build -t localleaf:ci .
+      - name: Smoke test (compile a document inside the image)
+        run: |
+          docker run -d --name ll -p 127.0.0.1:4000:4000 localleaf:ci
+          for i in $(seq 1 30); do curl -sf http://localhost:4000/api/health && break; sleep 1; done
+          H='X-Localleaf: 1'
+          ID=$(curl -sf -X POST -H "$H" -H 'Content-Type: application/json' -d '{"name":"ci"}' http://localhost:4000/api/projects | jq -r .data.id)
+          curl -sf -X POST -H "$H" -H 'Content-Type: application/json' -d '{}' "http://localhost:4000/api/projects/$ID/compile" | tee /tmp/compile.json
+          test "$(jq -r .data.status /tmp/compile.json)" = success
+          curl -sf -o /tmp/out.pdf "http://localhost:4000/api/projects/$ID/output/pdf"
+          head -c 5 /tmp/out.pdf | grep -q '%PDF'
+      - if: failure()
+        run: docker logs ll
