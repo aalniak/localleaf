@@ -25,6 +25,8 @@
     "node": ">=22.12"
   },
   "scripts": {
+    "setup": "node scripts/setup.js",
+    "prestart": "node scripts/setup.js --preflight",
     "dev": "node server/index.js --dev",
     "build": "vite build web",
     "start": "vite build web && node server/index.js",

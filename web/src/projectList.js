@@ -38,9 +38,26 @@ export async function openProjectList(root) {
   });
 
   api.health().then(
-    (hl) => { status.textContent = `Compiler: ${hl.description}`; },
+    (hl) => {
+      status.textContent = hl.compiler === 'none' ? 'Compiler: none found' : `Compiler: ${hl.description}`;
+      if (hl.compiler === 'none') dropZone.before(noCompilerBanner());
+    },
     () => { status.textContent = 'Server unreachable'; },
   );
+
+  /** Explains how to get a compiler; the server picks it up without a restart. */
+  function noCompilerBanner() {
+    const code = (text) => h('code', {}, text);
+    const link = (href, text) => h('a', { href, target: '_blank', rel: 'noopener noreferrer' }, text);
+    return h('div', { class: 'notice', role: 'status' },
+      h('strong', {}, 'No LaTeX compiler found. '),
+      h('span', {}, 'You can edit projects, but compiling needs one of:'),
+      h('ul', {},
+        h('li', {}, 'Docker (recommended): run ', code('npm run setup'), ' in the Localleaf folder to install or start it, or get ',
+          link('https://docs.docker.com/get-started/get-docker/', 'Docker Desktop'), '.'),
+        h('li', {}, link('https://tug.org/texlive/', 'TeX Live'), ' or ', link('https://miktex.org/', 'MiKTeX'), ' (provides latexmk).')),
+      h('span', { class: 'muted' }, 'Localleaf detects it automatically. Just reload this page.'));
+  }
 
   async function refresh() {
     try {

@@ -6,6 +6,9 @@ import { HttpError } from './errors.js';
 import { ok } from './http.js';
 import { hostAllowList, requireApiHeader, passwordGate } from './security.js';
 
+const HEALTH_REFRESH_MAX_MS = 3000;
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms).unref());
+
 function errorHandler(err, req, res, _next) {
   if (err instanceof HttpError) {
     return res.status(err.status).json({ success: false, data: null, error: err.message });
@@ -35,14 +38,17 @@ export function createApp({ store, compileService, backend, config, frontend }) 
   const api = express.Router();
   api.use(requireApiHeader);
   api.use(express.json({ limit: '25mb' }));
-  api.get('/health', (req, res) =>
+  api.get('/health', async (req, res) => {
+    // Re-detect a newly installed compiler, but never hold the page up for long (`docker info` can hang
+    // while Docker starts); a slow check finishes in the background and the next load sees it.
+    await Promise.race([backend.refresh?.(), delay(HEALTH_REFRESH_MAX_MS)]);
     ok(res, {
       compiler: backend.name,
       description: backend.description,
       supportsSynctex: backend.supportsSynctex,
       supportsEngines: backend.supportsEngines,
-    }),
-  );
+    });
+  });
   api.use('/projects', projectRoutes({ store, config }));
   api.use('/projects/:id', fileRoutes({ store, config }));
   api.use('/projects/:id', compileRoutes({ store, compileService }));

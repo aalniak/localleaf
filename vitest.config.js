@@ -6,7 +6,7 @@ export default defineConfig({
     environment: 'node',
     coverage: {
       provider: 'v8',
-      include: ['server/**/*.js', 'web/src/editor/completions.js', 'web/src/editor/fileTree.js'],
+      include: ['server/**/*.js', 'scripts/setupLib.js', 'web/src/editor/completions.js', 'web/src/editor/fileTree.js'],
       exclude: ['server/index.js'],
     },
   },

@@ -4,7 +4,8 @@ import express from 'express';
 import { loadConfig, ROOT_DIR } from './config.js';
 import { ProjectStore } from './projects/store.js';
 import { CompileService } from './compiler/service.js';
-import { detectBackend } from './compiler/detect.js';
+import { detectBackend, createRedetectingBackend } from './compiler/detect.js';
+import { ensureDockerOnPath } from './compiler/dockerPath.js';
 import { createApp } from './app.js';
 
 async function frontendMiddleware(config, dev) {
@@ -28,7 +29,9 @@ async function main() {
   const store = new ProjectStore(config.dataDir);
   await store.init();
 
-  const backend = await detectBackend(config);
+  ensureDockerOnPath();
+  const detected = await detectBackend(config);
+  const backend = config.compiler === 'auto' ? createRedetectingBackend(detected, () => detectBackend(config)) : detected;
   console.log(`[localleaf] compiler: ${backend.description}`);
   backend.ensureReady().then(
     () => console.log('[localleaf] compiler ready'),

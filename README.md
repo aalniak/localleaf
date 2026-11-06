@@ -42,6 +42,12 @@ npm install
 npm start            # builds the frontend, then serves http://localhost:4000
 ```
 
+**No compiler yet?** `npm start` notices, and offers to install Docker for you (winget on Windows, Homebrew on
+macOS, Docker's official install script on Linux) or to start it if it's installed but not running. It always
+asks first. You can also run the assistant on its own with `npm run setup`. If you say no, Localleaf still
+starts: you can edit, and the projects page explains how to add a compiler. Whatever you install is picked up
+automatically, without restarting Localleaf. Set `LOCALLEAF_SKIP_SETUP=1` to skip the check.
+
 Projects are stored in `./data`. Remove the helper container when you're done with
 `docker rm -f localleaf-texlive`; it is recreated on demand.
 
@@ -106,6 +112,7 @@ Set these as environment variables (`npm start`) or in a `.env` file next to `do
 | `LOCALLEAF_WORK_DIR` | OS temp dir | Build directory for the `texlive` backend |
 | `LOCALLEAF_COMPILE_TIMEOUT` | `300` | Seconds before a compile is killed |
 | `LOCALLEAF_MAX_UPLOAD_MB` | `300` | Upload size limit |
+| `LOCALLEAF_SKIP_SETUP` | *(unset)* | `1` skips the compiler check / Docker offer that `npm start` runs first |
 
 ## Hosting it for others
 
@@ -132,11 +139,12 @@ server/
   app.js, http.js       Express app, security middleware, { success, data, error } envelope
   routes/               projects, files, compile/SyncTeX endpoints
   projects/             filesystem project store, zip import/export, blank template
-  compiler/             docker + native backends, compile.sh, log parser, SyncTeX parser, compile service
+  compiler/             docker + native backends, Docker PATH lookup, re-detection, compile.sh, log parser, SyncTeX parser, compile service
 web/src/
   main.js               hash router (#/ and #/project/<id>)
   projectList.js        dashboard
   editor/               workspace, CodeMirror wrapper, completions, file tree, PDF viewer, logs, toolbar
+scripts/                setup assistant (npm run setup), CLI zip import
 test/                   vitest unit/integration tests; e2e/ drives a real browser
 Dockerfile              all-in-one image (Node + TeX Live), used by docker-compose.yml
 ```
